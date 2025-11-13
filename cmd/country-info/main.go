@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"countries-info/internal/routes"
+	"countries-info/internal/services"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -71,6 +73,14 @@ func main() {
 	srv, _ := setupServer()
 
 	startServer(srv)
+
+	result, err := services.FetchCountryInfo("india")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	fmt.Printf("Result: %+v\n", result)
 
 	gracefulShutdown(srv)
 }

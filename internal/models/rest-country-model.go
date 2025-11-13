@@ -1,7 +1,6 @@
 package models
 
-// JSON response from api starts from [, so we need to decode it in slice of objects.
-type CountryResponse []struct {
+type RestCountry struct {
 
 	// name field is itself an object so we use nested struct
 	Name struct {
@@ -21,8 +20,7 @@ type CountryResponse []struct {
 }
 
 type CurrencyObj struct {
-	Name string `json:"name"`
-
+	Name   string `json:"name"`
 	Symbol string `json:"symbol"`
 }
 
