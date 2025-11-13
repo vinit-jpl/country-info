@@ -10,5 +10,7 @@ func InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("GET /health", handlers.HandlerReadiness)
 
+	mux.HandleFunc("GET /api/countries/search", handlers.GetCountryInfoHandler)
+
 	return mux
 }
