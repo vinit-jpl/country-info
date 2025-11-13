@@ -1,8 +1,13 @@
 package handlers
 
-import "net/http"
+import (
+	"countries-info/internal/utils"
+	"net/http"
+)
 
 func HandlerReadiness(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Server is ready"))
+
+	utils.RespondWithJson(w, http.StatusOK, map[string]string{
+		"message": "Server is ready",
+	})
 }
