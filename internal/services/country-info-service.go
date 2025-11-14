@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// httpClient is used to make API requests with a fixed timeout.
+// This prevents the application from waiting forever if the API is slow.
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
