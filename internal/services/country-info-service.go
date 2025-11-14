@@ -10,11 +10,13 @@ import (
 	"strings"
 )
 
-func FetchCountryInfo(country string) (*models.CountryResponse, error) {
+// Build URL
+func buildURL(country string) (string, error) {
+
 	baseURL := os.Getenv("COUNTRY_API_URL")
 
 	if baseURL == "" {
-		return nil, fmt.Errorf("COUNTRY_API_URL not set")
+		return "", fmt.Errorf("COUNTRY_API_URL not set")
 	}
 
 	url := strings.Replace(
@@ -24,60 +26,97 @@ func FetchCountryInfo(country string) (*models.CountryResponse, error) {
 		1,                // replace only once
 	)
 
+	return url, nil
+
+}
+
+// Call API
+func callAPI(url string) ([]byte, error) {
 	resp, err := http.Get(url)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to call the API: %v", err)
 	}
-	defer resp.Body.Close()
 
-	// fmt.Println("resp:", resp)
+	defer resp.Body.Close()
 
 	// Handle non-200 responses gracefully
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
-	// check for invalid country
-
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to read API response: %w", err)
+		return nil, fmt.Errorf("Failed to read API response: %w", err)
 	}
 
+	return body, nil
+
+}
+
+// Parse API response
+func parseAPIResponse(body []byte) (*models.RestCountry, error) {
 	var raw []models.RestCountry
 
 	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("failed to parse API response: %v", err)
+		return nil, fmt.Errorf("invalid JSON: %w", err)
 	}
 
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("country not found: %s", country)
+		return nil, fmt.Errorf("empty response from API or country not found")
 	}
 
-	// fmt.Println("raw:", raw)
+	return &raw[0], nil
 
-	apiResp := raw[0]
+}
 
-	// extract required fields from raw and map to CountryResponse struct
-	// Handle missing capital gracefully
-	capital := "N/A"
-	if len(apiResp.Capital) > 0 {
-		capital = apiResp.Capital[0]
+// Extract required Fields
+func extractCapital(data *models.RestCountry) string {
+
+	if len(data.Capital) > 0 {
+		return data.Capital[0]
 	}
-	
-	currencySymbol := "N/A"
+	return "N/A"
+}
 
-	for _, v := range apiResp.Currencies {
-		currencySymbol = v.Symbol
-		break // only need the first currency
+func extractCurrency(data *models.RestCountry) string {
+
+	for _, v := range data.Currencies {
+		return v.Symbol // return first found
 	}
+	return "N/A"
+}
 
+// Build country response
+func mapToCountryResponse(apiResp *models.RestCountry) *models.CountryResponse {
 	return &models.CountryResponse{
 		Name:       apiResp.Name.Common,
-		Capital:    capital,
-		Currency:   currencySymbol,
+		Capital:    extractCapital(apiResp),
+		Currency:   extractCurrency(apiResp),
 		Population: int64(apiResp.Population),
-	}, nil
+	}
+}
 
+// Call helpers here
+func FetchCountryInfo(country string) (*models.CountryResponse, error) {
+	url, err := buildURL(country)
+
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := callAPI(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	apiResp, err := parseAPIResponse(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return mapToCountryResponse(apiResp), nil
 }
