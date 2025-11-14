@@ -8,7 +8,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
+
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
 
 // Build URL
 func buildURL(country string) (string, error) {
@@ -32,7 +37,7 @@ func buildURL(country string) (string, error) {
 
 // Call API
 func callAPI(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to call the API: %v", err)
