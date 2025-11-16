@@ -33,8 +33,10 @@ country-info/
 │   │   └── routes.go            # API route definitions
 │   ├── services/
 │   │   ├── country-info-service.go    # Business logic for country lookup
-│   │   └── servicehelpers/
-│   │       └── helpers.go             # Service helper functions
+│   │   ├── servicehelpers/
+│   │   │   └── helpers.go             # Service helper functions
+│   │   └── servicetest/
+│   │       └── fetch_country_concurrency_test.go  # Concurrency tests
 │   └── utils/
 │       ├── cache.go             # Cache interface
 │       ├── inmemory-cache.go    # In-memory cache implementation
@@ -165,7 +167,9 @@ Run tests with:
 go test ./...
 ```
 
-Tests are included for the caching mechanism in `internal/utils/cache_test.go`.
+Test coverage includes:
+- **Cache Tests** (`internal/utils/cache_test.go`): Tests for the in-memory caching mechanism
+- **Concurrency Tests** (`internal/services/servicetest/fetch_country_concurrency_test.go`): Tests for concurrent country info fetching with multiple goroutines
 
 ## Development
 
