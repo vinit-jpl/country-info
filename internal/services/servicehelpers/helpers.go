@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,12 @@ var CountryInfoCache = utils.NewCache()
 // This prevents the application from waiting forever if the API is slow.
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
+}
+
+func normalizeCountryName(country string) string {
+	country = strings.TrimSpace(country)
+	country = strings.Join(strings.Fields(country), " ")
+	return strings.ToLower(country)
 }
 
 // Validate country input
@@ -44,26 +51,25 @@ func IsValidCountryInput(country string) bool {
 
 // Build URL
 func BuildURL(country string) (string, error) {
-
 	if !IsValidCountryInput(country) {
 		return "", fmt.Errorf("invalid country name: %s", country)
 	}
 
 	baseURL := os.Getenv("COUNTRY_API_URL")
-
 	if baseURL == "" {
 		return "", fmt.Errorf("COUNTRY_API_URL not set")
 	}
 
-	url := strings.Replace(
-		baseURL,          // original URL
-		"{country_name}", // text to replace
-		country,          // replace with actual country passed by user
-		1,                // replace only once
-	)
+	// Normalize user input
+	country = normalizeCountryName(country)
 
-	return url, nil
+	// Encode for URL
+	encodedCountry := url.PathEscape(country)
 
+	// Replace placeholder
+	apiURL := strings.Replace(baseURL, "{country_name}", encodedCountry, 1)
+
+	return apiURL, nil
 }
 
 // Call API
@@ -140,7 +146,7 @@ func FetchCountryFromCache(country string) (*models.CountryResponse, bool) {
 	if !IsValidCountryInput(country) {
 		log.Printf("Invalid country input: '%s', skipping cache lookup", country)
 	}
-	cacheKey := strings.ToLower(country)
+	cacheKey := normalizeCountryName(country)
 
 	cachedData, found := CountryInfoCache.Get(cacheKey)
 
@@ -165,7 +171,7 @@ func SetCountryInCache(country string, resp *models.CountryResponse) {
 		return
 	}
 
-	cacheKey := strings.ToLower(country)
+	cacheKey := normalizeCountryName(country)
 
 	jsonData, err := json.Marshal(resp)
 
